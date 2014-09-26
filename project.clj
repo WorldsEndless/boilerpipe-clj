@@ -1,6 +1,8 @@
 (defproject boiler-pipe "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "boiler-pipe: boiler-pipe is a wrapper Clojure library on the boilerpipe
+  library for retrieving the content from the html representation of the webpages\n
+  "
+  :url "http://github.com/bugra/boiler-pipe"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]

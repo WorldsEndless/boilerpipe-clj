@@ -1,5 +1,6 @@
 (ns boiler-pipe.core
   (:gen-class)
+  (:require [clojure.string :as str])
   (:import (de.l3s.boilerpipe.extractors ArticleExtractor)
            (de.l3s.boilerpipe.extractors DefaultExtractor)
            (de.l3s.boilerpipe.extractors LargestContentExtractor)
@@ -7,7 +8,7 @@
            (de.l3s.boilerpipe.extractors KeepEverythingExtractor)
            (de.l3s.boilerpipe.extractors KeepEverythingWithMinKWordsExtractor)
            (de.l3s.boilerpipe.extractors ExtractorBase)))
-
+(def doc-num (atom 0))
 ;; Available extractors in Boilerpipe
 ;; defonce prevents more than one assignment
 ;http://grepcode.com/file/repo1.maven.org/maven2/de.l3s.boilerpipe/boilerpipe/1.1.0/de/l3s/boilerpipe/extractors/CommonExtractors.java#CommonExtractors
@@ -40,41 +41,71 @@
 ;   (get-title html default-extractor))
 ;  ([^String html ^ExtractorBase extractor]
 ;     (.getTitle extractor html)))
+(defn get-title
+  "Get the title element of given html (pre-extraction)"
+  [html]
+  ((re-find #"<title>(.*?)</title>" html) 1))
+
+(defn title-to-filename [title]
+  (swap! doc-num inc)
+  (-> (str (format "%02d" @doc-num) "_" title )
+      str/trim
+      str/lower-case
+      (#(str/replace % #"[.:“”!~-]" ""))
+      (#(str/replace % #" +" "_"))
+      (#(str/replace % #"_-_" "-"))))
+
+(defn get-files
+  "Get a lazy-seq of the files in a (str dir)"
+  [dir-path]
+  (file-seq (clojure.java.io/file dir-path)))
+
+(defn content-with-title
+  "Produce the boiler-plate removed content preceded by the title"
+  [html]
+  (let [title (get-title html)
+        base-content (str/trim (get-content html))
+        formatted (-> base-content
+                      (str/replace "\n " "")
+                      (str/replace " " " ")
+                      (str/replace "\n" "\n\n"))]
+    (str title "\n\n" formatted)))
+
+; if the file is an html file, pass it through content-with-title and spit it to the dir
+(defn process-files
+  "given a file seq, if the file is an html file, pass it through content-with-title and output to dir (with trailing slash)"
+  [files out-dir]
+  (doseq [f (filter #(re-find #".html" (.getName %)) files)] 
+    (let [html (slurp f)
+          title (get-title html)
+          con (content-with-title html)
+          filename  (title-to-filename title)
+          extension ".txt"]
+      (spit (str out-dir filename extension) con))))
 
 (defn -main
-  "Runs simple examples for usage of wrapper for extractors"
+  "Boiler-plate removal from command-line given a directory, a file, or a url"
   [& args]
-  ; default extractor is better
-  (def vox-article "http://www.vox.com/xpress/2014/9/25/6843509/income-distribution-recoveries-pavlina-tcherneva")
-  ; article extractor is better
-  (def fivethirtyeight-article "http://fivethirtyeight.com/features/lionel-messi-is-impossible/")
-  ; canola extractor seems to be better
-  (def thenextweb-article "http://thenextweb.com/microsoft/2014/09/23/microsoft-launches-online-services-bug-bounty-program-includes-office-365-rewards-starting-500/")
-  ; article extractor is better
-  (def venturebeat-article "http://venturebeat.com/2014/09/23/microsoft-and-godaddy-want-small-businesses-to-get-online-today/")
-  ; default extractor is better
-  (def techcrunch-article "http://techcrunch.com/2014/09/10/microsoft-held-in-contempt-as-it-battles-a-domestic-search-warrant-demanding-overseas-data/?ncid=rss")
-  ; article extractor is better
-  (def arstechnica-article "http://arstechnica.com/tech-policy/2014/09/microsoft-agrees-to-contempt-order-so-e-mail-privacy-case-can-be-appealed/")
-  ; article extractor is better
-  (def reuters-article "http://www.reuters.com/article/2014/09/04/us-getty-images-microsoft-lawsuit-idUSKBN0GZ2B720140904")
-  ; article extractor is better
-  (def theverge-article "http://www.theverge.com/2014/8/8/5984625/google-microsoft-others-backing-facebook-in-fight-for-user-privacy")
-  ; Gigaom does not accept any part of article extraction methods => Need to find a way to get the content in a better way
-  (def gigaom-article "http://gigaom.com/2014/06/30/microsoft-and-insteon-team-up-with-a-retail-smart-home-push/")
-  ; article extractor is better
-  (def wsj-article "http://online.wsj.com/article/PR-CO-20140629-900500.html")
-  ; default extractor is better
-  (def spoke-intel-article "http://www.spokeintel.com/tb/company/4dba42df91a3435dcd00008f/Microsoft+and+SAP+expand+a+deal+%28May-2014%29/http%3A%2F%2Fwww.bizjournals.com%2Fseattle%2Fblog%2Ftechflash%2F2014%2F05%2Fmicrosoft-and-sap-expand-a-deal.html")
-  ; default extractor is better
-  (def mashable-article "http://mashable.com/2014/04/23/microsoft-tech-startup-hotline/?utm_campaign=Mash-Prod-RSS-Feedburner-All-Partial&utm_cid=Mash-Prod-RSS-Feedburner-All-Partial&utm_medium=feed&utm_source=feedly&utm_reader=feedly")
+  args
+  ;(println (str args))
+  ;; File: Process the file and output
+  ;; URL: Process the file(s) and output
+  ;; Directory: Process every file in the directory
 
-  ; (def article (slurp vox-article))
-  (def articles [vox-article fivethirtyeight-article thenextweb-article venturebeat-article
-                 techcrunch-article arstechnica-article reuters-article theverge-article
-                 gigaom-article wsj-article spoke-intel-article mashable-article])
-  (doseq [[ii url](map-indexed vector articles)]
-    ; process the ii - url
-    (println (get-content (slurp url)))
-    (println ii url))
+  ;; Valid flags:
+  ;; -n number output files
+  ;; -o output file (not std-in)
+
   )
+
+
+;; Running example:
+;; ----------------
+;; (def gc-files (file-seq (clojure.java.io/file "/home/torysa/Documents/Gospel_Files/Conference_Talks/2015-2")))
+;; (process-files gc-files "/home/torysa/Documents/Gospel_Files/Conference_Talks/2015-2/Txt/")
+
+
+;; TODO
+;; 1. [ ] Simplify harvesting of html files
+;; 2. [ ] automate processing for command line
+;; 3. [X] Output names have a number to keep them in original order

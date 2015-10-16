@@ -74,14 +74,15 @@
 ; if the file is an html file, pass it through content-with-title and spit it to the dir
 (defn process-files
   "given a file seq, if the file is an html file, pass it through content-with-title and output to dir (with trailing slash)"
-  [files out-dir]
-  (doseq [f (filter #(re-find #".html" (.getName %)) files)] 
+  [dir]
+  (doseq [f (filter #(re-find #"\.html" (.getName %)) files)] 
     (let [html (slurp f)
-          title (get-title html)
           con (content-with-title html)
-          filename  (title-to-filename title)
-          extension ".txt"]
-      (spit (str out-dir filename extension) con))))
+          ;title (get-title html)
+          ;; filename  (title-to-filename title)
+          ;; extension ".txt"
+          ]
+      con))))
 
 (defn -main
   "Boiler-plate removal from command-line given a directory, a file, or a url"

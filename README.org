@@ -1,0 +1,14 @@
+#+TITLE: boilerpipe-clj
+
+A Leinengen project based on the [[https://github.com/cgag/boilerpipe-clj][cgag/boilerpipe-clj]] and augmented to be command-line ready as an app. 
+
+* Installation
+This app isn't yet on Clojars or Leinengen, so you'll need to build it yourself. 
+
+* Usage
+TODO
+
+* TO DO
+- [ ] Update lein project
+- [ ] Implement command-line hooks in -main
+- [ ] Multimethod to distinguish between file, url, directory input

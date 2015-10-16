@@ -3,7 +3,7 @@
 A Leinengen project based on the [[https://github.com/cgag/boilerpipe-clj][cgag/boilerpipe-clj]] and augmented to be command-line ready as an app. 
 
 * Installation
-This app isn't yet on Clojars or Leinengen, so you'll need to build it yourself. 
+This app isn't yet on Clojars, so you'll need to build it yourself or run it from a REPL.
 
 * Usage
 TODO
